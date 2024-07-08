@@ -1,11 +1,13 @@
-import { StatusBar } from 'expo-status-bar';
-import { Animated, Button, FlatList, StyleSheet, Text, TextInput, View } from 'react-native';
-import { useState } from "react";
-import ScrollView = Animated.ScrollView;
+import {StatusBar} from 'expo-status-bar';
+import {FlatList, StyleSheet, View, Button} from 'react-native';
+import {useState} from "react";
+import GoalItem from "@/components/GoalItem";
+import GoalInput from "@/components/GoalInput";
 
 export default function App() {
     const [enteredGoalsText, setEnteredGoalsText] = useState<string>('');
     const [courseGoals, setCourseGoals] = useState<string[]>([]);
+    const [modalIsVisible, setModalIsVisible] = useState(false)
 
     const goalInputHandler = (enteredText: string) => {
         setEnteredGoalsText(enteredText);
@@ -15,38 +17,43 @@ export default function App() {
         if (enteredGoalsText === '') return;
         setCourseGoals(currentCourseGoals => [...currentCourseGoals, enteredGoalsText]);
         setEnteredGoalsText(''); // TextInput 필드를 초기화
+        inputToggle();
     }
 
     const deleteGoalHandler = (index: number) => {
         setCourseGoals(currentCourseGoals =>
-            currentCourseGoals.filter((goal, goalIndex) => goalIndex !== index)
+            // 사용하지 않는 매개변수는 _ 를 사용해 명시해줄 것
+            currentCourseGoals.filter((_, goalIndex) => goalIndex !== index)
         );
     }
 
-    const renderItem = ({ item, index }: { item: string, index: number }) => (
-        <View style={styles.goalsItem}>
-            <Text>{item}</Text>
-            <Button title="삭제버튼" onPress={() => deleteGoalHandler(index)} />
-        </View>
-    );
+    const inputToggle = () => {
+        setModalIsVisible(modalIsVisible => !modalIsVisible)
+    }
 
     return (
         <View style={styles.container}>
-            <StatusBar style={"dark"} />
-            <View style={styles.inputContainer}>
-                <TextInput
-                    style={styles.textInput}
-                    placeholder="목표를 적어주세요!"
-                    onChangeText={goalInputHandler}
-                    value={enteredGoalsText}
-                />
-                <Button title="목표 추가하기" onPress={addGoalHandler} />
-            </View>
+            <StatusBar style={"dark"}/>
+            <Button title='목표 추가하기' onPress={inputToggle}/>
+            <GoalInput
+                visible={modalIsVisible}
+                inputToggle={inputToggle}
+                enteredGoalsText={enteredGoalsText}
+                goalInputHandler={goalInputHandler}
+                addGoalHandler={addGoalHandler}/>
+            {/*
+            ScrollView 는 모든 요소를 한번에 렌더링 함으로 대용량의 데이터를
+            처리하기에는 부적합함, FlatList 는화면에 보여지는 내용만 렌더링함
+            스크롤시에 그다음 내용이 추가적으로 렌더링 되는 구조로 더 효율적임
+             */}
+
             <FlatList
                 data={courseGoals}
-                renderItem={renderItem}
+                renderItem={({item, index}) => (
+                    <GoalItem item={item} index={index} deleteGoalHandler={deleteGoalHandler}/>
+                )}
                 // keyExtractor 를 사용해 FlatList 가 키를 인식할 수 있게함
-                keyExtractor={(item, index) => index.toString()} // keyExtractor 추가
+                keyExtractor={(_, index) => index.toString()} // keyExtractor 추가
                 contentContainerStyle={styles.goalsContainer}
             />
         </View>
@@ -58,33 +65,12 @@ const styles = StyleSheet.create({
         flex: 1,
         paddingTop: 50,
         paddingHorizontal: 16,
-        backgroundColor: 'white',
+        backgroundColor: '#5370ff',
     },
-    inputContainer: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: 'center',
-        borderBottomWidth: 1,
-        borderBottomColor: '#cccccc',
-        paddingBottom:20,
-        marginBottom: 20,
-    },
-    textInput: {
-        borderWidth: 1,
-        borderColor: '#cccccc',
-        width: '70%',
-        paddingLeft: 8,
-    },
+
     goalsContainer: {
         flexGrow: 1,
+        marginBottom:16,
     },
-    goalsItem: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: 8,
-        marginBottom: 16,
-        borderColor: 'gray',
-        borderBottomWidth: 1,
-    }
+
 });
